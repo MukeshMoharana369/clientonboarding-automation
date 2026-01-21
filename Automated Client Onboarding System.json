@@ -1,0 +1,601 @@
+{
+  "name": "Automated Client Onboarding System",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "get",
+        "documentURL": "https://docs.google.com/document/d/1Ep13u-o1oaIbk5m5_de2XRMkGodVUkIElb91gqU5h8A/edit?tab=t.0#heading=h.q5zig93dmv7u"
+      },
+      "id": "463aa9db-eb14-469c-966c-51376e4c8627",
+      "name": "Fetch Coach SOP",
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        -640,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst normalizedData = items.map((item) => {\n  const text = item?.json?.content?.parts[0]?.text;\n  const parts = text.split(\"\\n\\n\");\n  const normalizedParts = parts.reduce((acc, part) => {\n    const [key, ...values] = part.split(\"\\n\");\n    acc[key.replace(\":\", \"\")] = values.join(\"\\n\");\n    return acc;\n  }, {});\n  return { json: normalizedParts };\n});\nreturn normalizedData;\n"
+      },
+      "id": "6350488e-76f2-46ba-8e11-9ea5ad358f23",
+      "name": "Structure AI Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('If1').item.json.Email }}",
+        "subject": "=Welcome to {{ $('Data Normalization2').item.json['Program_Type\\r'] }}! Let's get started. ",
+        "emailType": "text",
+        "message": "=Hi {{ $('If1').item.json['Client_Name\\r'] }},\n\n{{ $json.WELCOME_MESSAGE }}\n\nHere are your next steps:\n{{ $json.ONBOARDING_STEPS }}\nPlease reply with answers to these quick questions so we are ready for your start date on {{ $('If').item.json.Start_Date }}:\nhttps://docs.google.com/document/d/1Ep13u-o1oaIbk5m5_de2XRMkGodVUkIElb91gqU5h8A/edit?tab=t.0#heading=h.q5zig93dmv7u\n\nBest,\nYour Coach",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "de13fc37-187b-4f2b-a9f3-c54128610b1a",
+      "name": "Client Communication",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        224,
+        0
+      ],
+      "webhookId": "261adad7-5a60-49b5-b940-8bd3f7812f32"
+    },
+    {
+      "parameters": {
+        "sendTo": "mukeshmoharana74@gmail.com",
+        "subject": "=Onboarding Started: {{ $('Data Normalization2').item.json['Client_Name\\r'] }}",
+        "emailType": "text",
+        "message": "=Client: {{ $('Data Normalization2').item.json['Client_Name\\r'] }}\nProgram: {{ $('If1').item.json['Program_Type\\r'] }}\nStatus: Onboarding Email Sent\n\nAutoAutomation Summary:\n{{ $('Structure AI Output').item.json.COACH_SUMMARY }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "58eeb273-528c-46b5-813a-a3db0d665e56",
+      "name": "Coach Notification",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        448,
+        0
+      ],
+      "webhookId": "a13a510a-7d60-466f-b93c-cf3f4b1dc168"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-3-flash-preview",
+          "mode": "list",
+          "cachedResultName": "models/gemini-3-flash-preview"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an Onboarding Preparation Assistant for a coaching business.\n\nIMPORTANT:\nYou are NOT a coach.\nYou do NOT give advice.\nYou do NOT make decisions.\nYou ONLY prepare onboarding content.\n\n========================\nSTRICT RULES (NON-NEGOTIABLE)\n========================\nYou must NOT:\n- Give fitness, nutrition, mindset, or medical advice\n- Coach or motivate the client\n- Recommend workouts, diets, or strategies\n- Diagnose or interpret health conditions\n- Modify program structure\n- Use hype, sales language, emojis, or casual tone\n\nYour role is LIMITED to preparation and organization only.\n\n========================\nCONTEXT YOU WILL RECEIVE\n========================\n\nCLIENT INFORMATION:\n- Client Name: {{ $('If1').item.json['Client_Name\\r'] }}\n- Program Type: {{ $('If1').item.json['Program_Type\\r'] }}\n- Client Goal: {{ $('If1').item.json.Goal }}\n- Start Date: {{ $('Get row(s) in sheet').item.json.Start_Date }}\n\n\n\nYou must follow the SOP strictly.\nIf the SOP restricts something, you must respect it.\n\n========================\nYOUR TASK\n========================\n\nUsing the CLIENT INFORMATION and the COACH SOP, prepare ONLY the following:\n\n1. A professional welcome message for the client\n2. Clear onboarding steps for the client\n3. A structured list of intake questions based on the program type\n4. A short internal summary for the coach\n\nThis is PREPARATION ONLY.\nNothing you write is coaching or advice.\n\n========================\nOUTPUT FORMAT (STRICT)\n========================\n\nReturn your response in EXACTLY this format:\n\nWELCOME_MESSAGE:\n<professional welcome message>\n\nONBOARDING_STEPS:\n- Step 1\n- Step 2\n- Step 3\n\nINTAKE_QUESTIONS:\n- Question 1\n- Question 2\n- Question 3\n\nCOACH_SUMMARY:\n<short internal summary for the coach>\n\n========================\nFINAL RULE\n========================\nIf any required information is missing or unclear:\n- Do NOT guess\n- Do NOT assume\n- Write: \"Information missing — requires coach review.\"\n\nDo NOT add explanations.\nDo NOT add extra sections.\nDo NOT break the format.\n"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        -416,
+        144
+      ],
+      "id": "ad210f79-1b01-491e-927a-a6f7a68ce77a",
+      "name": "Message a model",
+      "retryOnFail": false,
+      "notesInFlow": true,
+      "alwaysOutputData": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "df1c7ac5-9535-4c1e-9000-055d55fe4263",
+              "leftValue": "={{ $json.Status }}",
+              "rightValue": "CLIENT",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "0954faae-e110-4593-a9c8-b0f656b6e0c8",
+              "leftValue": "={{ $json['onboarding '] }}",
+              "rightValue": " ",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1312,
+        176
+      ],
+      "id": "d385f888-13d3-4a8f-8e6a-9ad20a26eef1",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "seconds",
+              "secondsInterval": 25
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -1760,
+        176
+      ],
+      "id": "d7571221-a6a7-430e-9242-11ba81ee423f",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "18oZPya-4oUQfKxOPz10Gnro6gWaBtKW-Md_WMWouqcY",
+          "mode": "list",
+          "cachedResultName": "Client Onboarding ",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/18oZPya-4oUQfKxOPz10Gnro6gWaBtKW-Md_WMWouqcY/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/18oZPya-4oUQfKxOPz10Gnro6gWaBtKW-Md_WMWouqcY/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Status",
+              "lookupValue": "CLIENT"
+            },
+            {
+              "lookupColumn": "onboarding ",
+              "lookupValue": " "
+            }
+          ]
+        },
+        "options": {
+          "returnFirstMatch": true
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1536,
+        176
+      ],
+      "id": "f8187aec-c38c-4ab9-bf3e-b09248a95db6",
+      "name": "Get row(s) in sheet"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "cc1aaa97-64fb-4b23-9ce6-622560baf44d",
+              "leftValue": "={{ $json['Client_Name\\r'] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "667f57c1-f152-4d4a-aff6-91ab479cd42e",
+              "leftValue": "={{ $json.Email }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "36507602-3a60-4e67-93b6-67cdcad7069e",
+              "leftValue": "={{ $json['Program_Type\\r'] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "6e2af741-45ea-4ce2-82b2-a9ec7df7ec9d",
+              "leftValue": "={{ $json.Goal }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -864,
+        160
+      ],
+      "id": "4019be39-1ce1-4736-8770-5509ccb23d8e",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e6789c29-d113-42eb-80a4-273211971744",
+              "name": "Client_Name\r",
+              "value": "={{ $json['Client_Name\\r'] }}",
+              "type": "string"
+            },
+            {
+              "id": "efa64768-72e2-497a-bb91-0b120d7259e1",
+              "name": "Email",
+              "value": "={{ $json.Email }}",
+              "type": "string"
+            },
+            {
+              "id": "2cc14ae4-56a2-414b-af73-644b9b4d17e3",
+              "name": "Program_Type\r",
+              "value": "={{ $json['Program_Type\\r'] }}",
+              "type": "string"
+            },
+            {
+              "id": "0f2d435a-f8d0-4923-af53-dde76b88c744",
+              "name": "Goal",
+              "value": "={{ $json.Goal }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1088,
+        160
+      ],
+      "id": "724d27af-e3ea-411d-9962-95055bb68911",
+      "name": "Data Normalization2"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "18oZPya-4oUQfKxOPz10Gnro6gWaBtKW-Md_WMWouqcY",
+          "mode": "list",
+          "cachedResultName": "Client Onboarding ",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/18oZPya-4oUQfKxOPz10Gnro6gWaBtKW-Md_WMWouqcY/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/18oZPya-4oUQfKxOPz10Gnro6gWaBtKW-Md_WMWouqcY/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Client_ID": "={{ $('Get row(s) in sheet').item.json.Client_ID }}",
+            "onboarding ": "Onboarding sent "
+          },
+          "matchingColumns": [
+            "Client_ID"
+          ],
+          "schema": [
+            {
+              "id": "Client_ID",
+              "displayName": "Client_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Client_Name\r",
+              "displayName": "Client_Name\r",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Program_Type\r",
+              "displayName": "Program_Type\r",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Goal",
+              "displayName": "Goal",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Start_Date",
+              "displayName": "Start_Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "onboarding ",
+              "displayName": "onboarding ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        656,
+        0
+      ],
+      "id": "1b187468-c395-43a3-bde8-37fe8f4f4d1a",
+      "name": "Update row in sheet"
+    },
+    {
+      "parameters": {
+        "sendTo": "mukeshmoharana74@gmail.com",
+        "subject": "HIi couch error message ",
+        "message": "msdnbs",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        48,
+        352
+      ],
+      "id": "0aaf64f5-8473-4646-8d3c-8fc081728137",
+      "name": "Send a message",
+      "webhookId": "e615572d-1fe7-4353-8017-7a3213d89eea"
+    }
+  ],
+  "pinData": {
+    "Schedule Trigger": [
+      {
+        "json": {
+          "timestamp": "2026-01-05T11:55:50.000+05:30",
+          "Readable date": "January 5th 2026, 11:55:50 am",
+          "Readable time": "11:55:50 am",
+          "Day of week": "Monday",
+          "Year": "2026",
+          "Month": "January",
+          "Day of month": "05",
+          "Hour": "11",
+          "Minute": "55",
+          "Second": "50",
+          "Timezone": "Asia/Calcutta (UTC+05:30)"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Fetch Coach SOP": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structure AI Output": {
+      "main": [
+        [
+          {
+            "node": "Client Communication",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Client Communication": {
+      "main": [
+        [
+          {
+            "node": "Coach Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Coach Notification": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Structure AI Output",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Data Normalization2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Fetch Coach SOP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Data Normalization2": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "c6cf2ecf-5a0d-417a-9fcf-46b08c6e1872",
+  "meta": {
+    "instanceId": "817537ccf45e86df6628493ea2633ffbe1226f94f1007e5cee39998aedda52c5"
+  },
+  "id": "1OyFA54WgorEgZ3RODDFt",
+  "tags": []
+}
